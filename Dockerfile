@@ -66,128 +66,19 @@ RUN mkdir -p /var/run/sshd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# Install cmake
-RUN cd / &&\
-    wget http://www.cmake.org/files/v${CMAKE_VERSION_MAJOR}.${CMAKE_VERSION_MINOR}/cmake-${CMAKE_VERSION_MAJOR}.${CMAKE_VERSION_MINOR}.${CMAKE_VERSION_PATCH}.tar.gz &&\
-    tar xf cmake-${CMAKE_VERSION_MAJOR}.${CMAKE_VERSION_MINOR}.${CMAKE_VERSION_PATCH}.tar.gz &&\
-    cd cmake-${CMAKE_VERSION_MAJOR}.${CMAKE_VERSION_MINOR}.${CMAKE_VERSION_PATCH} &&\
-    ./configure &&\
-    make -j$(nproc) &&\
-    make install
+# Install pre-built development libraries (Fast Build)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    libeigen-dev \
+    libopencv-dev \
+    libpcl-dev \
+    pybind11-dev \
+    libyaml-cpp-dev \
+    libyaml-cpp-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Eigen
-RUN cd / && \
-    wget https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION_MAJOR}.${EIGEN_VERSION_MINOR}.${EIGEN_VERSION_PATCH}/eigen-${EIGEN_VERSION_MAJOR}.${EIGEN_VERSION_MINOR}.${EIGEN_VERSION_PATCH}.tar.gz && \
-    tar xf eigen-${EIGEN_VERSION_MAJOR}.${EIGEN_VERSION_MINOR}.${EIGEN_VERSION_PATCH}.tar.gz && \
-    cd eigen-${EIGEN_VERSION_MAJOR}.${EIGEN_VERSION_MINOR}.${EIGEN_VERSION_PATCH} && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make install && \
-    cd / && \
-    rm -rf eigen-${EIGEN_VERSION_MAJOR}.${EIGEN_VERSION_MINOR}.${EIGEN_VERSION_PATCH}.tar.gz eigen-${EIGEN_VERSION_MAJOR}.${EIGEN_VERSION_MINOR}.${EIGEN_VERSION_PATCH}
-
+# Install PyTorch
 RUN pip3 install -U torch==2.6.0 torchvision==0.21.0
-
-# Install OpenCV
-RUN cd / && \
-    git clone --depth 1 --branch ${OPENCV_VERSION_MAJOR}.${OPENCV_VERSION_MINOR}.${OPENCV_VERSION_PATCH} https://github.com/opencv/opencv && \
-    git clone --depth 1 --branch ${OPENCV_VERSION_MAJOR}.${OPENCV_VERSION_MINOR}.${OPENCV_VERSION_PATCH} https://github.com/opencv/opencv_contrib && \
-    mkdir -p /opencv/build && \
-    cd /opencv/build && \
-    cmake ..  -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_CUDA_STUBS=OFF \
-        -DBUILD_DOCS=OFF \
-        -DWITH_MATLAB=OFF \
-        -Dopencv_dnn_BUILD_TORCH_IMPORTE=OFF \
-        -DCUDA_FAST_MATH=ON \
-        -DMKL_WITH_OPENMP=ON \
-        -DOPENCV_ENABLE_NONFREE=ON \
-        -DWITH_OPENMP=ON \
-        -DWITH_QT=ON \
-        -DWITH_OPENEXR=ON \
-        -DENABLE_PRECOMPILED_HEADERS=OFF \
-        -DBUILD_opencv_cudacodec=OFF \
-        -DINSTALL_PYTHON_EXAMPLES=OFF \
-        -DWITH_TIFF=OFF \
-        -DWITH_WEBP=OFF \
-        -DWITH_FFMPEG=ON \
-        -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules \
-        -DCMAKE_CXX_FLAGS=-std=c++17 \
-        -DENABLE_CXX11=OFF \
-        -DBUILD_opencv_xfeatures2d=OFF \
-        -DOPENCV_DNN_OPENCL=OFF \
-        -DWITH_CUDA=ON \
-        -DWITH_OPENCL=OFF \
-        -DBUILD_opencv_wechat_qrcode=OFF \
-        -DCMAKE_CXX_STANDARD=17 \
-        -DCMAKE_CXX_STANDARD_REQUIRED=ON \
-        -DOPENCV_CUDA_OPTIONS_opencv_test_cudev=-std=c++17 \
-        -DCUDA_ARCH_BIN="7.0 7.5 8.0 8.6 9.0" \
-        -DCMAKE_INSTALL_PREFIX=/usr/local \
-        -DCMAKE_INSTALL_LIBDIR=lib \
-        -DINSTALL_PKGCONFIG=ON \
-        -DOPENCV_GENERATE_PKGCONFIG=ON \
-        -DPKG_CONFIG_PATH=/usr/local/lib/pkgconfig \
-        -DINSTALL_PYTHON_EXAMPLES=OFF \
-        -DINSTALL_C_EXAMPLES=OFF && \
-    make -j$(nproc) && \
-    make install && \
-    cd / && \
-    rm -rf /opencv /opencv_contrib
-
-# Install PCL
-RUN cd / && \
-    git clone --depth 1 --branch pcl-${PCL_VERSION_MAJOR}.${PCL_VERSION_MINOR}.${PCL_VERSION_PATCH} https://github.com/PointCloudLibrary/pcl && \
-    mkdir -p /pcl/build && \
-    cd /pcl/build && \
-    cmake .. \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_apps=OFF \
-        -DBUILD_GPU=OFF \
-        -DBUILD_CUDA=OFF \
-        -DBUILD_examples=OFF \
-        -DBUILD_global_tests=OFF \
-        -DBUILD_simulation=OFF \
-        -DCUDA_BUILD_EMULATION=OFF \
-        -DCMAKE_CXX_FLAGS=-std=c++17 \
-        -DPCL_ENABLE_SSE=ON \
-        -DPCL_SHARED_LIBS=ON \
-        -DWITH_VTK=OFF \
-        -DPCL_ONLY_CORE_POINT_TYPES=ON \
-        -DPCL_COMMON_WARNINGS=OFF && \
-    make -j$(nproc) && \
-    make install && \
-    cd / && \
-    rm -rf /pcl
-
-# Install Pybind11
-RUN cd / && \
-    git clone --depth 1 --branch v${PYBIND11_VERSION_MAJOR}.${PYBIND11_VERSION_MINOR}.${PYBIND11_VERSION_PATCH} https://github.com/pybind/pybind11 && \
-    mkdir -p /pybind11/build && \
-    cd /pybind11/build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DPYBIND11_INSTALL=ON -DPYBIND11_TEST=OFF && \
-    make -j$(nproc) && \
-    make install && \
-    cd / && \
-    rm -rf /pybind11
-
-# Install YAML-CPP
-RUN cd / && \
-    git clone --depth 1 --branch ${YAML_CPP_VERSION_MAJOR}.${YAML_CPP_VERSION_MINOR}.${YAML_CPP_VERSION_PATCH} https://github.com/jbeder/yaml-cpp && \
-    mkdir -p /yaml-cpp/build && \
-    cd /yaml-cpp/build && \
-    cmake .. \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DBUILD_TESTING=OFF \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DINSTALL_GTEST=OFF \
-        -DYAML_CPP_BUILD_TESTS=OFF \
-        -DYAML_BUILD_SHARED_LIBS=ON && \
-    make -j$(nproc) && \
-    make install && \
-    cd / && \
-    rm -rf /yaml-cpp
 
 # Modified WORKDIR to avoid conflict with RunPod volume
 WORKDIR /app
